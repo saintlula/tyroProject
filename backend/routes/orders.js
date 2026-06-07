@@ -34,9 +34,24 @@ router.post('/', validateOrder, (req, res) =>
     }
 
     //Customer exists, insert the new order into the database.
-    db.prepare(
-        'INSERT INTO orders (orderId, customerId, item, quantity) VALUES (?, ?, ?, ?)'
-    ).run(orderId, customerId, item, quantity);
+    try
+    {
+        db.prepare(
+            'INSERT INTO orders (orderId, customerId, item, quantity) VALUES (?, ?, ?, ?)'
+        ).run(orderId, customerId, item, quantity);
+    }
+    catch (error)
+    {
+        if(error.message.includes('UNIQUE constraint failed'))
+        {
+            return res.status(409).json({
+                error: `Order with id '${orderId}' already exists`
+            });
+        }
+        return res.status(500).json({
+            error: 'An unexpected error accured'
+        });
+    }   
 
     //Fetch the newly saved order from the database to return in the response. 
     //This is to confirm what was actually saved rather than just echoing back the request data.
